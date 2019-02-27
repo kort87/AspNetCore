@@ -118,8 +118,8 @@ namespace Microsoft.AspNetCore.Mvc.FunctionalTests
             var responseContent = await response.Content.ReadAsStringAsync();
 
             // Assert
-            Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
             Assert.Equal(string.Empty, responseContent);
+            Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         }
 
         [Fact]

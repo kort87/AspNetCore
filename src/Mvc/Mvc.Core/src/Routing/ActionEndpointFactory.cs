@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Abstractions;
@@ -58,14 +59,6 @@ namespace Microsoft.AspNetCore.Mvc.Routing
 
             if (action.AttributeRouteInfo == null)
             {
-                // In traditional conventional routing setup, the routes defined by a user have a static order
-                // defined by how they are added into the list. We would like to maintain the same order when building
-                // up the endpoints too.
-                //
-                // Start with an order of '1' for conventional routes as attribute routes have a default order of '0'.
-                // This is for scenarios dealing with migrating existing Router based code to Endpoint Routing world.
-                var conventionalRouteOrder = 1;
-
                 // Check each of the conventional patterns to see if the action would be reachable.
                 // If the action and pattern are compatible then create an endpoint with action
                 // route values on the pattern.
@@ -84,9 +77,9 @@ namespace Microsoft.AspNetCore.Mvc.Routing
                         action,
                         updatedRoutePattern,
                         route.RouteName,
-                        conventionalRouteOrder++,
+                        route.Order,
                         route.DataTokens,
-                        suppressLinkGeneration: false,
+                        suppressLinkGeneration: true,
                         suppressPathMatching: false,
                         conventions);
                     endpoints.Add(builder);
@@ -117,6 +110,42 @@ namespace Microsoft.AspNetCore.Mvc.Routing
                     conventions);
                 endpoints.Add(endpoint);
             }
+        }
+
+        public void AddConventionalLinkGenerationRoute(List<Endpoint> endpoints, HashSet<string> keys, ConventionalRouteEntry route)
+        {
+            var requiredValues = new RouteValueDictionary();
+            foreach (var key in keys)
+            {
+                if (route.Pattern.GetParameter(key) != null)
+                {
+                    // Parameter (allow any)
+                    requiredValues[key] = RoutePattern.RequiredValueAny;
+                }
+                else if (route.Pattern.Defaults.TryGetValue(key, out var value))
+                {
+                    requiredValues[key] = value;
+                }
+                else
+                {
+                    requiredValues[key] = null;
+                }
+            }
+
+            // We have to do some massaging of the pattern to try and get the
+            // required values to be correct.
+            var pattern = _routePatternTransformer.SubstituteRequiredValues(route.Pattern, requiredValues);
+            if (pattern == null)
+            {
+
+            }
+
+            endpoints.Add(new RouteEndpoint(
+                context => Task.CompletedTask,
+                pattern,
+                route.Order,
+                new EndpointMetadataCollection(new SuppressMatchingMetadata()),
+                "Route: " + route.Pattern.RawText));
         }
 
         private static (RoutePattern resolvedRoutePattern, IDictionary<string, string> resolvedRequiredValues) ResolveDefaultsAndRequiredValues(ActionDescriptor action, RoutePattern attributeRoutePattern)
