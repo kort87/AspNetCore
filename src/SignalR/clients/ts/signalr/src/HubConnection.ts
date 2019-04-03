@@ -368,7 +368,7 @@ export class HubConnection {
 
     /** Registers a handler that will be invoked when the connection starts reconnecting.
      *
-     * @param {Function} callback The handler that will be invoked when the connection start reconnecting. Optionally receives a single argument containing the error that caused the connection to start reconnecting (if any).
+     * @param {Function} callback The handler that will be invoked when the connection starts reconnecting. Optionally receives a single argument containing the error that caused the connection to start reconnecting (if any).
      */
     public onreconnecting(callback: (error?: Error) => void) {
         if (callback) {
